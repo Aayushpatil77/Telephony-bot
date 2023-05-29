@@ -62,6 +62,7 @@ export default async function handler(req, res) {
             Bucket: bucketName,
             Key: timestamp + files.audio.originalFilename,
             Body: fs.createReadStream(files.audio.filepath),
+            ContentType: 'audio/mpeg'
           },
           async (err, data) => {
             console.log("https://telephony-bot.s3.ap-south-1.amazonaws.com/" + timestamp + files.audio.originalFilename)
@@ -69,7 +70,8 @@ export default async function handler(req, res) {
               client.calls.create({
                 url: "https://telephony-bot.s3.ap-south-1.amazonaws.com/" + timestamp + files.audio.originalFilename,
                 to: addCountryCode(Object.values(v)[0]).toString(),
-                from: '+12543543923'
+                from: process.env.MOBILE_NUMBER,
+                method: 'GET'
               }).then((call) => console.log(call.sid)).catch((error) => console.error(error))
             });
             res.status(201).send({ message: "ok!" });
