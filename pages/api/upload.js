@@ -65,8 +65,8 @@ export default async function handler(req, res) {
             ContentType: 'audio/mpeg'
           },
           async (err, data) => {
-            console.log("https://telephony-bot.s3.ap-south-1.amazonaws.com/" + timestamp + files.audio.originalFilename)
             jsonData.map((v) => {
+              addCountryCode(Object.values(v)[0]).toString()
               client.calls.create({
                 url: "https://telephony-bot.s3.ap-south-1.amazonaws.com/" + timestamp + files.audio.originalFilename,
                 to: addCountryCode(Object.values(v)[0]).toString(),
