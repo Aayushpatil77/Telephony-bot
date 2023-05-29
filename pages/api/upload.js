@@ -72,7 +72,7 @@ export default async function handler(req, res) {
                 to: addCountryCode(Object.values(v)[0]).toString(),
                 from: process.env.MOBILE_NUMBER,
                 method: 'GET'
-              }).then((call) => console.log(call.sid)).catch((error) => console.error(error))
+              }).then((call) => console.log(call.sid)).catch((error) => res.send(500).send({message: 'something went wrong' + error}))
             });
             res.status(201).send({ message: "ok!" });
           }
