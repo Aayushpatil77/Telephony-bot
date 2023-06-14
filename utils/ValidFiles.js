@@ -12,7 +12,7 @@ function getExtension(filename) {
  * @param {any} files 
  * @returns {Array}
  */
-export default function validFile(files) {
+export default function validFiles(files) {
     
     let validFile = ['', ''];
     

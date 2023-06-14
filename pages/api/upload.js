@@ -1,31 +1,18 @@
 import fs from "fs";
 import AWS from "aws-sdk";
 import formidable from "formidable";
-import { read, utils } from "xlsx";
 
-const COUNTRYCODE = 91;
+import {
+  accountSid,
+  accessKeyId,
+  authToken,
+  bucketName,
+  region,
+  secretAccessKey,
+  CountryCode,
+} from "@constants";
+import { addCountryCode, getJsonData } from "@utils";
 
-function IsCountryCodePresent(number) {
-  if (String(number).length > 10) {
-    return true;
-  }
-  return false;
-}
-
-function addCountryCode(number) {
-  if (!IsCountryCodePresent(number)) {
-    return '+' + String(COUNTRYCODE) + number;
-  }
-
-  return '+' + String(number);
-}
-
-const region = "ap-south-1";
-const bucketName = "telephony-bot";
-const accessKeyId = process.env.LOCAL_AWS_ACCESS_KEY;
-const secretAccessKey = process.env.LOCAL_AWS_SECRET_KEY;
-const accountSid = process.env.ACCOUNT_SID;
-const authToken = process.env.AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
 
 const s3Client = new AWS.S3({
@@ -51,35 +38,60 @@ export default async function handler(req, res) {
         return;
       }
 
-      const workbook = read(data, { type: "buffer" });
-      const jsonData = utils.sheet_to_json(
-        workbook.Sheets[workbook.SheetNames[0]]
-      );
+      console.log("Reading File...");
 
-      try {
-        return s3Client.putObject(
-          {
-            Bucket: bucketName,
-            Key: timestamp + files.audio.originalFilename,
-            Body: fs.createReadStream(files.audio.filepath),
-            ContentType: 'audio/mpeg'
-          },
-          async (err, data) => {
-            jsonData.map((v) => {
-              addCountryCode(Object.values(v)[0]).toString()
-              client.calls.create({
-                url: "https://telephony-bot.s3.ap-south-1.amazonaws.com/" + timestamp + files.audio.originalFilename,
-                to: addCountryCode(Object.values(v)[0]).toString(),
-                from: process.env.MOBILE_NUMBER,
-                method: 'GET'
-              }).then((call) => res.status(201).send({message: call.sid})).catch((error) => res.send(500).send({message: 'something went wrong' + error}))
+      const jsonData = getJsonData(data);
+
+      console.log("Read file complete...");
+
+      const uploadParams = {
+        Bucket: bucketName,
+        Key: timestamp + files.audio.originalFilename,
+        Body: fs.createReadStream(files.audio.filepath),
+        ContentType: "audio/mpeg",
+      };
+
+      console.log("Uploading File...");
+
+      return new Promise((resolve, object) => {
+        s3Client
+          .putObject(uploadParams)
+          .promise()
+          .then(async (_) => {
+            console.log("Sending callsss...");
+            jsonData.map(async (v) => {
+              console.log(
+                "Sending Call to " +
+                  addCountryCode(CountryCode, Object.values(v)[0]).toString()
+              );
+
+              try {
+                await client.calls.create({
+                  url:
+                    "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
+                    timestamp +
+                    files.audio.originalFilename,
+                  to: addCountryCode(
+                    CountryCode,
+                    Object.values(v)[0]
+                  ).toString(),
+                  from: process.env.MOBILE_NUMBER,
+                  method: "GET",
+                });
+              } catch (error) {
+                console.log(error);
+              }
+              res.status(201).json({ message: "Done!" });
+              resolve();
             });
-          }
-        );
-      } catch (e) {
-        console.log(e);
-        res.status(500).send("Error uploading files");
-      }
+          })
+          .catch((error) => {
+            console.error("error uploading files: ", error);
+            res.sendStatus(500);
+            resolve();
+          })
+          .finally("Done!");
+      });
     });
   });
 }

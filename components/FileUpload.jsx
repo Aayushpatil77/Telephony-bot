@@ -1,11 +1,14 @@
 import Image from "next/image";
+import axios from "axios";
+import { useRef, useState } from "react";
+
+import SpinLoader from "./SpinLoader";
+import DragOverlay from "./DragOverlay";
+import { validFiles } from "@utils";
+
 import uploadIcon from "../public/assets/icons/upload.svg";
 import ArrowRight from "../public/assets/icons/arrow_right.svg";
-import { useRef, useState } from "react";
-import validFiles from "@utils/ValidFiles";
-import SpinLoader from "./SpinLoader";
-import axios from "axios";
-import DragOverlay from "./DragOverlay";
+
 
 const FileUpload = () => {
   const [file, setFile] = useState(null);
