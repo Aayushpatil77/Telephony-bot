@@ -4,7 +4,7 @@ const accessKeyId = process.env.LOCAL_AWS_ACCESS_KEY;
 const secretAccessKey = process.env.LOCAL_AWS_SECRET_KEY;
 const accountSid = process.env.ACCOUNT_SID;
 const authToken = process.env.AUTH_TOKEN;
-const CountryCode = 91;
+const CountryCode = 1;
 
 export {
   region,
