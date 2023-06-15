@@ -24,10 +24,9 @@ export default function validFiles(files) {
         extensions.push(getExtension(files[i].name));
     }
 
-    if (!extensions.includes('xlsx')) return [];
-    if (!extensions.includes('mp3')) return [];
+    if (!(extensions.includes('xlsx') || extensions.includes('xls') || extensions.includes('mp3'))) return [];
 
-    if (getExtension(files[0].name) == 'xlsx') {
+    if (getExtension(files[0].name) == 'xlsx' || getExtension(files[0].name) == 'xls') {
         validFile[0] = files[0];
         validFile[1] = files[1];
     } else {

@@ -65,8 +65,8 @@ export default async function handler(req, res) {
                   addCountryCode(CountryCode, Object.values(v)[0]).toString()
               );
 
-              try {
-                await client.calls.create({
+              client.calls
+                .create({
                   url:
                     "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
                     timestamp +
@@ -77,12 +77,16 @@ export default async function handler(req, res) {
                   ).toString(),
                   from: process.env.MOBILE_NUMBER,
                   method: "GET",
+                })
+                .then(() => {
+                  res.status(201).json({ message: "Done!" });
+                })
+                .catch((error) => {
+                  console.error(error);
+                })
+                .finally(() => {
+                  resolve();
                 });
-              } catch (error) {
-                console.log(error);
-              }
-              res.status(201).json({ message: "Done!" });
-              resolve();
             });
           })
           .catch((error) => {
