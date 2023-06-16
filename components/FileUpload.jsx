@@ -42,7 +42,7 @@ const FileUpload = () => {
   };
 
   const handleInputChange = (e) => {
-    if (e.target.files.length == 2 ) {
+    if (e.target.files.length == 3 ) {
       resetStates();
       setFile(e.target.files);
     } else {
@@ -68,7 +68,7 @@ const FileUpload = () => {
     try {
       const ValidFiles = validFiles(file);
       console.log(ValidFiles);
-      if (ValidFiles.length != 2) {
+      if (ValidFiles.length != 3) {
         setAreInvalidFiles(true);
         setFile(null);
         setUploading(false);
@@ -77,6 +77,7 @@ const FileUpload = () => {
         const formData = new FormData();
         formData.append("excel", ValidFiles[0]);
         formData.append("audio", ValidFiles[1]);
+        formData.append("text", ValidFiles[2]);
         const { data, status } = await axios.post("/api/upload", formData);
         if (status == 201) {
           console.log(data);
@@ -113,7 +114,7 @@ const FileUpload = () => {
         {/* When Files are invalid */}
         {areInvalidFiles && (
           <h3 className="text-xl bg-zinc-800 px-4 py-2 rounded-lg text-red-700">
-            You must upload 2 files (excel & mp3)
+            You must upload 3 files (excel, mp3 & text)
           </h3>
         )}
 
@@ -127,6 +128,7 @@ const FileUpload = () => {
               <>
                 {<h3 className="text-5xl">{file[0].name}</h3>}
                 {<h3 className="text-5xl">{file[1].name}</h3>}
+                {<h3 className="text-5xl">{file[2].name}</h3>}
               </>
             )}
           </div>
@@ -150,7 +152,7 @@ const FileUpload = () => {
                 <div className="text-center">
                   <h3 className="text-5xl">Drag & Drop</h3>
                   <p className="text-base mt-2 text-zinc-400">
-                    Supports xlsx & mp3 files
+                    Supports xlsx, mp3 & text files
                   </p>
                 </div>
               </>
