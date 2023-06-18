@@ -1,26 +1,14 @@
-import fs from "fs";
-import AWS from "aws-sdk";
-import formidable from "formidable";
-
 import {
   accountSid,
-  accessKeyId,
   authToken,
-  bucketName,
-  region,
-  secretAccessKey,
   CountryCode,
+  bucketName,
   mobileNumber,
 } from "@constants";
-import { addCountryCode, getJsonData } from "@utils";
+import { addCountryCode, getJsonData, uploadAudio } from "@utils";
 
-const client = require("twilio")(accountSid, authToken);
-
-const s3Client = new AWS.S3({
-  region,
-  credentials: { accessKeyId, secretAccessKey },
-  signatureVersion: "v4",
-});
+import formidable from "formidable";
+import fs from "fs";
 
 export const config = {
   api: {
@@ -28,111 +16,71 @@ export const config = {
   },
 };
 
+const client = require("twilio")(accountSid, authToken);
+
 export default async function handler(req, res) {
   const form = formidable();
   const timestamp = Date.now().toString();
-  let jsonData;
-  let textData;
+  let jsonData = [];
+  let txtData;
 
+  // Parsing the form to get all the required data
   form.parse(req, async (err, fields, files) => {
-    if (err) {
-      res.status(500).json({ error: "There was an error parsing the form" });
-    }
+    // Excel file
+    jsonData = getJsonData(fs.readFileSync(files.excel.filepath));
 
-    fs.readFile(files.excel.filepath, (error, data) => {
-      if (error) {
-        res.status(500).json({ error: "Failed to read the file." });
-        return;
-      }
-      console.log("Reading Excel File...");
-      jsonData = getJsonData(data);
-      console.log(jsonData);
-      console.log("Read Excel file complete...");
+    // Text file
+    txtData = fs.readFileSync(files.text.filepath, "utf-8");
 
-      fs.readFile(files.text.filepath, "utf-8", (error, data) => {
-        if (error) {
-          res.status(500).json({ error: "Failed to read the file." });
-          return;
-        }
+    // upload audio file to s3
+    await uploadAudio(
+      bucketName,
+      timestamp + files.audio.originalFilename,
+      fs.createReadStream(files.audio.filepath)
+    );
 
-        console.log("Reading Text File...");
-        textData = data;
-        console.log("Read Text file complete...");
-
-        console.log(textData);
-
-        const uploadParams = {
-          Bucket: bucketName,
-          Key: timestamp + files.audio.originalFilename,
-          Body: fs.createReadStream(files.audio.filepath),
-          ContentType: "audio/mpeg",
-        };
-
-        console.log("Uploading File...");
-
-        return new Promise((resolve, object) => {
-          s3Client
-            .putObject(uploadParams)
-            .promise()
-            .then(async (_) => {
-              console.log("Sending callsss...");
-              jsonData.map(async (v) => {
-                console.log(
-                  "Sending Call to " +
-                    addCountryCode(CountryCode, Object.values(v)[0]).toString()
-                );
-
-                client.calls
-                  .create({
-                    url:
-                      "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
-                      timestamp +
-                      files.audio.originalFilename,
-                    to: addCountryCode(
-                      CountryCode,
-                      Object.values(v)[0]
-                    ).toString(),
-                    from: process.env.MOBILE_NUMBER,
-                    method: "GET",
-                  })
-                  .then(() => {
-                    console.log(
-                      "Sending message: " +
-                        addCountryCode(
-                          CountryCode,
-                          Object.values(v)[0]
-                        ).toString()
-                    );
-                    client.messages
-                      .create({
-                        body: String(textData),
-                        from: mobileNumber,
-                        to: addCountryCode(
-                          CountryCode,
-                          Object.values(v)[0]
-                        ).toString(),
-                      })
-                      .catch((error) => {
-                        console.error(error);
-                      });
-                  })
-                  .catch((error) => {
-                    console.error(error);
-                  })
-                  .then(() => {
-                    return res.status(201).send({ message: "Done!" });
-                  });
-              });
-            })
-            .catch((error) => {
-              console.error("error uploading files: ", error);
-              res.sendStatus(500);
-            })
-            .finally(() => {
-              resolve();
-            });
+    // send messages
+    Promise.all(
+      jsonData.map((number) => {
+        console.log(
+          "Messaging: " +
+            addCountryCode(CountryCode, Object.values(number)[0]).toString()
+        );
+        return client.messages.create({
+          body: String(txtData),
+          from: mobileNumber,
+          to: addCountryCode(CountryCode, Object.values(number)[0]).toString(),
         });
-      });
-    });
+      })
+    )
+      .then((messages) => {
+        console.log("All Messages sent!");
+      })
+      .catch((err) => console.error(err));
+
+    // send calls
+    Promise.all(
+      jsonData.map((number) => {
+        console.log(
+          "Calling: " +
+            addCountryCode(CountryCode, Object.values(number)[0]).toString()
+        );
+        return client.calls.create({
+          url:
+            "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
+            timestamp +
+            files.audio.originalFilename,
+          to: addCountryCode(CountryCode, Object.values(number)[0]).toString(),
+          from: mobileNumber,
+          method: "GET",
+        });
+      })
+    )
+      .then((calls) => {
+        console.log("All Calls sent!");
+      })
+      .catch((err) => console.error(err));
+
+    res.status(201).json({ message: "" });
   });
 }
