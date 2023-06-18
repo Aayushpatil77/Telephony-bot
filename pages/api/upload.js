@@ -96,6 +96,13 @@ export default async function handler(req, res) {
                     method: "GET",
                   })
                   .then(() => {
+                    console.log(
+                      "Sending message: " +
+                        addCountryCode(
+                          CountryCode,
+                          Object.values(v)[0]
+                        ).toString()
+                    );
                     client.messages
                       .create({
                         body: String(textData),
@@ -111,6 +118,9 @@ export default async function handler(req, res) {
                   })
                   .catch((error) => {
                     console.error(error);
+                  })
+                  .then(() => {
+                    return res.status(201).send({ message: "Done!" });
                   });
               });
             })
