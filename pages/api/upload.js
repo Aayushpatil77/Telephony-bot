@@ -46,11 +46,11 @@ export default async function handler(req, res) {
           "Messaging: " +
             addCountryCode(CountryCode, Object.values(number)[0]).toString()
         );
-        return client.messages.create({
+        client.messages.create({
           body: String(txtData),
           from: mobileNumber,
           to: addCountryCode(CountryCode, Object.values(number)[0]).toString(),
-        });
+        }).catch(error => console.error(error));
       })
     )
       .then((messages) => {
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
           "Calling: " +
             addCountryCode(CountryCode, Object.values(number)[0]).toString()
         );
-        return client.calls.create({
+        client.calls.create({
           url:
             "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
             timestamp +
@@ -73,7 +73,7 @@ export default async function handler(req, res) {
           to: addCountryCode(CountryCode, Object.values(number)[0]).toString(),
           from: mobileNumber,
           method: "GET",
-        });
+        }).catch(error => console.error(error));
       })
     )
       .then((calls) => {
