@@ -46,17 +46,32 @@ export default async function handler(req, res) {
           "Messaging: " +
             addCountryCode(CountryCode, Object.values(number)[0]).toString()
         );
-        client.messages.create({
-          body: String(txtData),
-          from: mobileNumber,
-          to: addCountryCode(CountryCode, Object.values(number)[0]).toString(),
-        }).catch(error => console.error(error));
+        client.messages
+          .create({
+            body: String(txtData),
+            from: mobileNumber,
+            to: addCountryCode(
+              CountryCode,
+              Object.values(number)[0]
+            ).toString(),
+          })
+          .catch((error) => {
+            res
+              .status(500)
+              .json({ message: "something went wrong while sending messages" });
+            console.error(error);
+          });
       })
     )
       .then((messages) => {
         console.log("All Messages sent!");
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        res
+          .status(500)
+          .json({ message: "something went wrong while sending messages" });
+        console.error(err);
+      });
 
     // send calls
     Promise.all(
@@ -65,21 +80,33 @@ export default async function handler(req, res) {
           "Calling: " +
             addCountryCode(CountryCode, Object.values(number)[0]).toString()
         );
-        client.calls.create({
-          url:
-            "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
-            timestamp +
-            files.audio.originalFilename,
-          to: addCountryCode(CountryCode, Object.values(number)[0]).toString(),
-          from: mobileNumber,
-          method: "GET",
-        }).catch(error => console.error(error));
+        client.calls
+          .create({
+            url:
+              "https://telephony-bot.s3.ap-south-1.amazonaws.com/" +
+              timestamp +
+              files.audio.originalFilename,
+            to: addCountryCode(
+              CountryCode,
+              Object.values(number)[0]
+            ).toString(),
+            from: mobileNumber,
+            method: "GET",
+          })
+          .catch((error) => {
+            res
+              .status(500)
+              .json({ message: "something went wrong while sending calls" });
+            console.error(error);
+          });
       })
     )
       .then((calls) => {
         console.log("All Calls sent!");
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+      });
 
     res.status(201).json({ message: "" });
   });
